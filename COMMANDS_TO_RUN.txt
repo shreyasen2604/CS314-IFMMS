@@ -1,0 +1,83 @@
+========================================
+COPY AND RUN THESE COMMANDS ONE BY ONE
+========================================
+
+STEP 1: Run migrations (This creates all tables)
+-------------------------------------------------
+php artisan migrate
+
+
+If Step 1 gives errors, try this instead:
+-------------------------------------------------
+php artisan migrate:fresh --seed
+
+
+STEP 2: Seed the database (This adds default data)
+-------------------------------------------------
+php artisan db:seed
+
+
+STEP 3: Clear all caches
+-------------------------------------------------
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+
+
+STEP 4: If still not working, run the emergency fix
+-------------------------------------------------
+php emergency-fix.php
+
+
+ALTERNATIVE: Complete Reset (This will delete all data!)
+-------------------------------------------------
+php artisan migrate:fresh --seed --force
+
+
+========================================
+LOGIN CREDENTIALS AFTER SETUP
+========================================
+
+Admin Account:
+Email: admin@zar.com
+Password: Admin@12345
+
+Driver Account:
+Email: driver1@zar.com
+Password: Driver@12345
+
+Technician Account:
+Email: tech1@zar.com
+Password: Tech@12345
+
+========================================
+TO CHECK IF TABLES EXIST
+========================================
+
+php artisan tinker
+
+Then type:
+Schema::hasTable('incidents')
+
+Should return: true
+
+Type 'exit' to quit tinker
+
+========================================
+IF NOTHING WORKS
+========================================
+
+1. Make sure MySQL is running
+2. Make sure database 'ifmms_zar' exists
+3. Check .env file has correct database credentials:
+   DB_DATABASE=ifmms_zar
+   DB_USERNAME=root
+   DB_PASSWORD=(your password or leave empty)
+
+To create database manually:
+mysql -u root -p
+CREATE DATABASE ifmms_zar;
+exit
+
+Then run:
+php artisan migrate:fresh --seed
