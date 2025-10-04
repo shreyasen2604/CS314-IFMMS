@@ -3,6 +3,14 @@
 @section('title', 'Create Service Request - IFMMS')
 
 @section('content')
+
+@php
+    $backUrl = auth()->user()->role === 'Driver'
+        ? route('driver.dashboard')      
+        : route('support.service-requests.index');
+@endphp
+
+
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -19,9 +27,10 @@
                                 <p class="text-muted mb-0">Submit a new service or support request</p>
                             </div>
                         </div>
-                        <a href="{{ route('support.service-requests.index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ $backUrl }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back
                         </a>
+
                     </div>
                 </div>
             </div>
@@ -188,7 +197,7 @@
                 <div class="card shadow-sm border-0 mt-4">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ $backUrl }}'">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </button>
                             <button type="submit" class="btn btn-primary">

@@ -3,6 +3,14 @@
 @section('title', 'Report Incident - IFMMS')
 
 @section('content')
+
+@php
+    // Choose where "Back" should go
+    $backUrl = auth()->user()->role === 'Driver'
+        ? route('driver.dashboard')      // or route('driver.requests.my') if you have a "My Requests" page
+        : route('support.service-requests.index');
+@endphp
+
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -19,7 +27,7 @@
                                 <p class="text-muted mb-0">Document and report a fleet incident</p>
                             </div>
                         </div>
-                        <a href="{{ route('support.incidents.index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ $backUrl }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back
                         </a>
                     </div>
@@ -229,7 +237,7 @@
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                            <button type="button" class="btn btn-outline-secondary" onclick="location.href='{{ $backUrl }}'">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </button>
                             <button type="submit" class="btn btn-danger">
