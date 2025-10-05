@@ -5,13 +5,19 @@
 @section('content')
 
 @php
-    // Choose where "Back" should go
-    $backUrl = auth()->user()->role === 'Driver'
-        ? route('driver.dashboard')      // or route('driver.requests.my') if you have a "My Requests" page
-        : route('support.service-requests.index');
+    $role = strtolower(auth()->user()->role ?? '');
+
+    $dashMap = [
+        'driver'     => 'driver.dashboard',
+        'admin'      => 'dashboard',          
+        'technician' => 'dashboard',          
+    ];
+
+    $target  = $dashMap[$role] ?? 'dashboard';
+    $backUrl = \Illuminate\Support\Facades\Route::has($target) ? route($target) : url('/'); 
 @endphp
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 content-blur">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <!-- Header -->
@@ -27,12 +33,129 @@
                                 <p class="text-muted mb-0">Document and report a fleet incident</p>
                             </div>
                         </div>
+                        <div class="d-flex align-items-center gap-2">
+                        @if (strtolower(auth()->user()->role) === 'driver')
+                            <button type="button"
+                                    class="btn btn-danger"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#quickEmergencyModal">
+                                <i class="fas fa-bolt me-2"></i> Quick Emergency Reporting
+                            </button>
+                        @endif
+
+
                         <a href="{{ $backUrl }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back
                         </a>
                     </div>
+                    </div>
                 </div>
             </div>
+
+            @php
+            $driverVehicle = \App\Models\Vehicle::where('driver_id', auth()->id())->first();
+            @endphp
+
+            <!-- Quick Emergency Modal -->
+            <div class="modal fade" id="quickEmergencyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-3 shadow-lg">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-bolt me-2"></i>Quick Emergency Report</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <form id="quickEmergencyForm" data-store-url="{{ route('driver.incidents.emergency.store') }}">
+                    @csrf
+                    <input type="hidden" name="report_type" value="quick">
+                    <input type="hidden" name="latitude"  id="qeLat">
+                    <input type="hidden" name="longitude" id="qeLng">
+
+                    <div class="modal-body">
+                    <div id="qeAlert" class="alert alert-danger d-none mb-3"></div>
+                    <div id="qeSuccess" class="alert alert-success d-none mb-3">
+                        <strong>Submitted!</strong> Report <span id="qeReportId"></span>.
+                        ETA: <span id="qeResponseTime"></span>.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Vehicle ID <span class="text-danger">*</span></label>
+                        <input name="vehicle_identifier"
+                            class="form-control {{ $driverVehicle ? 'is-valid' : '' }}"
+                            value="{{ $driverVehicle?->vehicle_number }}"
+                            placeholder="e.g., TRK-001" required {{ $driverVehicle ? 'readonly' : '' }}>
+                        @if($driverVehicle)
+                        <div class="form-text text-success">Auto-filled from your assigned vehicle.</div>
+                        @endif
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Current Location</label>
+                        <div class="input-group">
+                        <input name="location_description" id="qeLoc" class="form-control"
+                                placeholder="Tap GPS to fill automatically">
+                        <button type="button" class="btn btn-danger" id="qeGpsBtn">
+                            <i class="fas fa-crosshairs me-1"></i> GPS
+                        </button>
+                        </div>
+                        <div class="form-text" id="qeLocStatus"></div>
+                    </div>
+
+                    @php
+                        $opts = [
+                        'fuel_low' => 'Fuel Low',
+                        'engine_trouble' => 'Engine Trouble',
+                        'electrical_problem' => 'Electrical Problem',
+                        'oil_low' => 'Oil Low',
+                        'tire_issues' => 'Tire Issues',
+                        'overheating' => 'Overheating',
+                        ];
+                    @endphp
+
+                    <div class="mb-2">
+                        <label class="form-label d-block">Emergency Type <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                        @foreach($opts as $val => $label)
+                            <div class="col-6">
+                            <label class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="emergency_types[]" value="{{ $val }}">
+                                <span class="form-check-label">{{ $label }}</span>
+                            </label>
+                            </div>
+                        @endforeach
+
+                        <div class="col-12">
+                            <label class="form-check">
+                            <input class="form-check-input" type="checkbox" id="qeOtherChk" name="emergency_types[]" value="other">
+                            <span class="form-check-label">Other</span>
+                            </label>
+                            <input class="form-control mt-2 d-none" id="qeOtherTxt" name="other_description"
+                                placeholder="Describe the emergency">
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="form-check">
+                        <input class="form-check-input" type="checkbox" name="needs_assistance" value="1">
+                        <span class="form-check-label">I need immediate roadside assistance</span>
+                        </label>
+                    </div>
+                    </div>
+
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <span class="spinner-border spinner-border-sm me-2 d-none" id="qeSpinner"></span>
+                        Submit
+                    </button>
+                    </div>
+                </form>
+                </div>
+            </div>
+            </div>
+            <!-- /Quick Emergency Modal -->
+
 
             @if(session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -183,18 +306,6 @@
                                        placeholder="Insurance Claim Number" value="{{ old('insurance_claim_number') }}"
                                        id="insuranceClaimNumber" {{ old('insurance_notified') ? '' : 'disabled' }}>
                             </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Estimated Damage Cost</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input type="number" name="estimated_damage_cost" class="form-control @error('estimated_damage_cost') is-invalid @enderror" 
-                                           value="{{ old('estimated_damage_cost') }}" step="0.01" placeholder="0.00">
-                                </div>
-                                @error('estimated_damage_cost')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -259,6 +370,11 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+
+    body.modal-open #pageWrap { filter: blur(4px); transition: filter .2s ease; }
+    .modal-backdrop.show { backdrop-filter: blur(2px); background: rgba(0,0,0,.2); }
+
+
 }
 </style>
 
@@ -281,4 +397,93 @@ if (navigator.geolocation) {
     });
 }
 </script>
+
+<script>
+(() => {
+  const form   = document.getElementById('quickEmergencyForm');
+  if (!form) return;
+
+  const alertB = document.getElementById('qeAlert');
+  const okB    = document.getElementById('qeSuccess');
+  const spin   = document.getElementById('qeSpinner');
+  const gpsBtn = document.getElementById('qeGpsBtn');
+  const loc    = document.getElementById('qeLoc');
+  const locSt  = document.getElementById('qeLocStatus');
+  const lat    = document.getElementById('qeLat');
+  const lng    = document.getElementById('qeLng');
+  const otherChk = document.getElementById('qeOtherChk');
+  const otherTxt = document.getElementById('qeOtherTxt');
+
+  // Show/hide "Other" text field
+  otherChk?.addEventListener('change', () => {
+    otherTxt.classList.toggle('d-none', !otherChk.checked);
+  });
+
+  // GPS helper
+  gpsBtn?.addEventListener('click', () => {
+    if (!navigator.geolocation) { locSt.textContent = 'Geolocation not supported.'; return; }
+    locSt.textContent = 'Getting GPS...';
+    navigator.geolocation.getCurrentPosition((pos)=>{
+      lat.value = pos.coords.latitude; lng.value = pos.coords.longitude;
+      if(!loc.value) loc.value = `GPS: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+      locSt.textContent = 'GPS captured.';
+    }, (err)=>{ locSt.textContent = 'Unable to get location: ' + err.message; });
+  });
+
+  // Submit via AJAX (stay on page)
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alertB.classList.add('d-none'); okB.classList.add('d-none');
+    spin.classList.remove('d-none');
+
+    const url = form.dataset.storeUrl;
+    const fd  = new FormData(form);
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: fd
+      });
+
+      const data = await res.json().catch(()=> ({}));
+
+      if (!res.ok) {
+        const msg = data.message || 'Please check the form.';
+        const errs = data.errors ? Object.values(data.errors).flat().join('<br>') : '';
+        alertB.innerHTML = '<strong>Error:</strong> ' + msg + (errs ? '<br>' + errs : '');
+        alertB.classList.remove('d-none');
+        spin.classList.add('d-none');
+        return;
+      }
+
+      document.getElementById('qeReportId').textContent    = data.report_id || ('#' + (data.id ?? ''));
+      document.getElementById('qeResponseTime').textContent = data.response_time || '—';
+      okB.classList.remove('d-none');
+      spin.classList.add('d-none');
+
+      // Auto-close after a short delay
+      setTimeout(()=> {
+        const modalEl = document.getElementById('quickEmergencyModal');
+        const modal   = bootstrap.Modal.getInstance(modalEl);
+        modal?.hide();
+        form.reset();
+        otherTxt.classList.add('d-none');
+        locSt.textContent = '';
+      }, 1800);
+
+    } catch (err) {
+      alertB.textContent = 'Network error. Please try again.';
+      alertB.classList.remove('d-none');
+      spin.classList.add('d-none');
+    }
+  });
+})();
+</script>
+
+
 @endsection

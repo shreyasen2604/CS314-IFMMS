@@ -14,58 +14,60 @@ use Illuminate\Support\Facades\Storage;
 class ServiceRequestController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = ServiceRequest::with(['vehicle', 'requester', 'assignee']);
-
-        // Filter by status
-        if ($request->has('status') && $request->status != 'all') {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by priority
-        if ($request->has('priority') && $request->priority != 'all') {
-            $query->where('priority', $request->priority);
-        }
-
-        // Filter by category
-        if ($request->has('category') && $request->category != 'all') {
-            $query->where('category', $request->category);
-        }
-
-        // Search
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('ticket_number', 'like', "%{$search}%")
-                  ->orWhere('subject', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        // Role-based filtering
-        $user = Auth::user();
-        if ($user->role === 'Driver') {
-            $query->where('requester_id', $user->id);
-        } elseif ($user->role === 'Technician') {
-            $query->where(function($q) use ($user) {
-                $q->where('assigned_to', $user->id)
-                  ->orWhere('status', 'open');
-            });
-        }
-
-        $serviceRequests = $query->orderBy('created_at', 'desc')->paginate(10);
-
-        // Get statistics
-        $stats = [
-            'total' => ServiceRequest::count(),
-            'open' => ServiceRequest::where('status', 'open')->count(),
-            'in_progress' => ServiceRequest::where('status', 'in_progress')->count(),
-            'resolved' => ServiceRequest::where('status', 'resolved')->count(),
-            'critical' => ServiceRequest::where('priority', 'critical')->count(),
-        ];
-
-        return view('support.service-requests.index', compact('serviceRequests', 'stats'));
+{
+    if ($request->user() && strcasecmp($request->user()->role, 'driver') === 0) {
+        return redirect()->route('driver.dashboard'); 
     }
+
+    $query = ServiceRequest::with(['vehicle', 'requester', 'assignee']);
+
+    // Filter by status
+    if ($request->has('status') && $request->status != 'all') {
+        $query->where('status', $request->status);
+    }
+
+    // Filter by priority
+    if ($request->has('priority') && $request->priority != 'all') {
+        $query->where('priority', $request->priority);
+    }
+
+    // Filter by category
+    if ($request->has('category') && $request->category != 'all') {
+        $query->where('category', $request->category);
+    }
+
+    // Search
+    if ($request->has('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('ticket_number', 'like', "%{$search}%")
+              ->orWhere('subject', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%");
+        });
+    }
+
+    // Role-based filtering (still useful for technicians; drivers are already redirected)
+    $user = Auth::user();
+    if ($user->role === 'Technician') {
+        $query->where(function($q) use ($user) {
+            $q->where('assigned_to', $user->id)
+              ->orWhere('status', 'open');
+        });
+    }
+
+    $serviceRequests = $query->orderBy('created_at', 'desc')->paginate(10);
+
+    // Get statistics
+    $stats = [
+        'total'        => ServiceRequest::count(),
+        'open'         => ServiceRequest::where('status', 'open')->count(),
+        'in_progress'  => ServiceRequest::where('status', 'in_progress')->count(),
+        'resolved'     => ServiceRequest::where('status', 'resolved')->count(),
+        'critical'     => ServiceRequest::where('priority', 'critical')->count(),
+    ];
+
+    return view('support.service-requests.index', compact('serviceRequests', 'stats'));
+}
 
     public function create()
 {

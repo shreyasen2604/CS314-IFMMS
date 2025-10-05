@@ -8,13 +8,12 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-red-50 to-orange-100">
+  
   @php
-    // Get the driver's assigned vehicle
     $driverVehicle = \App\Models\Vehicle::where('driver_id', auth()->id())->first();
   @endphp
   
   <div class="max-w-4xl mx-auto p-6">
-    <!-- Header Section -->
     <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
@@ -66,19 +65,6 @@
           <p class="text-gray-600 text-sm">Fast checkbox-based reporting for immediate emergencies</p>
           <div class="mt-3 text-red-600 text-sm font-medium">
             <i class="fas fa-clock mr-1"></i>~30 seconds
-          </div>
-        </button>
-
-        <button onclick="showDetailedReport()" id="detailedReportBtn" class="p-6 border-2 border-blue-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all text-left group">
-          <div class="flex items-center mb-3">
-            <div class="bg-blue-100 p-2 rounded-full mr-3 group-hover:bg-blue-200">
-              <i class="fas fa-file-alt text-blue-600 text-lg"></i>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-800">Detailed Incident Report</h3>
-          </div>
-          <p class="text-gray-600 text-sm">Comprehensive reporting with photos and location data</p>
-          <div class="mt-3 text-blue-600 text-sm font-medium">
-            <i class="fas fa-clock mr-1"></i>~3-5 minutes
           </div>
         </button>
       </div>

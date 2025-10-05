@@ -13,55 +13,59 @@ use Illuminate\Support\Facades\Storage;
 class IncidentReportController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = IncidentReport::with(['vehicle', 'driver', 'reporter']);
-
-        // Filter by status
-        if ($request->has('status') && $request->status != 'all') {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by type
-        if ($request->has('type') && $request->type != 'all') {
-            $query->where('type', $request->type);
-        }
-
-        // Filter by severity
-        if ($request->has('severity') && $request->severity != 'all') {
-            $query->where('severity', $request->severity);
-        }
-
-        // Date range filter
-        if ($request->has('date_from')) {
-            $query->where('incident_date', '>=', $request->date_from);
-        }
-        if ($request->has('date_to')) {
-            $query->where('incident_date', '<=', $request->date_to);
-        }
-
-        // Search
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('incident_number', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        $incidents = $query->orderBy('incident_date', 'desc')->paginate(10);
-
-        // Get statistics
-        $stats = [
-            'total' => IncidentReport::count(),
-            'active' => IncidentReport::active()->count(),
-            'critical' => IncidentReport::critical()->count(),
-            'this_month' => IncidentReport::whereMonth('incident_date', now()->month)->count(),
-            'resolved' => IncidentReport::where('status', 'resolved')->count(),
-        ];
-
-        return view('support.incidents.index', compact('incidents', 'stats'));
+{
+    if ($request->user() && strcasecmp($request->user()->role, 'driver') === 0) {
+        return redirect()->route('driver.dashboard'); 
     }
+
+    $query = IncidentReport::with(['vehicle', 'driver', 'reporter']);
+
+    // Filter by status
+    if ($request->has('status') && $request->status != 'all') {
+        $query->where('status', $request->status);
+    }
+
+    // Filter by type
+    if ($request->has('type') && $request->type != 'all') {
+        $query->where('type', $request->type);
+    }
+
+    // Filter by severity
+    if ($request->has('severity') && $request->severity != 'all') {
+        $query->where('severity', $request->severity);
+    }
+
+    // Date range filter
+    if ($request->has('date_from')) {
+        $query->where('incident_date', '>=', $request->date_from);
+    }
+    if ($request->has('date_to')) {
+        $query->where('incident_date', '<=', $request->date_to);
+    }
+
+    // Search
+    if ($request->has('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('incident_number', 'like', "%{$search}%")
+              ->orWhere('location', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%");
+        });
+    }
+
+    $incidents = $query->orderBy('incident_date', 'desc')->paginate(10);
+
+    // Get statistics
+    $stats = [
+        'total'       => IncidentReport::count(),
+        'active'      => IncidentReport::active()->count(),
+        'critical'    => IncidentReport::critical()->count(),
+        'this_month'  => IncidentReport::whereMonth('incident_date', now()->month)->count(),
+        'resolved'    => IncidentReport::where('status', 'resolved')->count(),
+    ];
+
+    return view('support.incidents.index', compact('incidents', 'stats'));
+}
 
     public function create()
     {

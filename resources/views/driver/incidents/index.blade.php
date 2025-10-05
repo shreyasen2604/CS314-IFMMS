@@ -13,80 +13,15 @@
             <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
           </div>
           <div>
-            <h1 class="text-3xl font-bold text-gray-800">Vehicle Incidents</h1>
-            <p class="text-gray-600">Monitor and report vehicle issues</p>
+            <h1 class="text-3xl font-bold text-gray-800">Reported Incidents</h1>
+            <p class="text-gray-600">View reported incidents.</p>
           </div>
         </div>
-        <div class="flex gap-3">
-          <a href="{{ route('driver.dashboard') }}" class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-            <i class="fas fa-arrow-left mr-2"></i>Dashboard
-          </a>
-          <a href="{{ route('driver.incidents.emergency') }}" class="flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md">
-            <i class="fas fa-bolt mr-2"></i>Emergency Report
-          </a>
-          <a href="{{ route('driver.incidents.create') }}" class="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
-            <i class="fas fa-plus mr-2"></i>Full Report
-          </a>
-        </div>
+        <div>
+        <a href="{{ route('driver.dashboard') }}" class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>Dashboard
+        </a>
       </div>
-    </div>
-
-    <!-- Quick Report Section -->
-    <div class="bg-white rounded-2xl shadow-lg p-6">
-      <div class="flex items-center mb-6">
-        <div class="bg-orange-100 p-2 rounded-full mr-3">
-          <i class="fas fa-bolt text-orange-600"></i>
-        </div>
-        <h2 class="text-xl font-semibold text-gray-800">Quick Incident Report</h2>
-        <span class="ml-3 text-sm text-gray-500">For immediate issues</span>
-      </div>
-      
-      <form method="POST" action="{{ route('driver.incidents.store') }}" class="grid md:grid-cols-4 gap-4">
-        @csrf
-        <input type="hidden" name="quick_report" value="1">
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Issue Type</label>
-          <select name="category" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="">Select Issue</option>
-            <option value="Fuel Low">🛢️ Fuel Low</option>
-            <option value="Oil Low">🛢️ Oil Low</option>
-            <option value="Water/Coolant Low">💧 Water/Coolant Low</option>
-            <option value="Tire Issue">🛞 Tire Issue</option>
-            <option value="Engine Warning">⚠️ Engine Warning</option>
-            <option value="Brake Issue">🛑 Brake Issue</option>
-            <option value="Electrical">⚡ Electrical</option>
-            <option value="Other">❓ Other</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Severity</label>
-          <select name="severity" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="Low">🟢 Low - Can Continue</option>
-            <option value="Medium">🟡 Medium - Needs Attention</option>
-            <option value="High">🟠 High - Stop Soon</option>
-            <option value="Critical">🔴 Critical - Stop Now</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle ID</label>
-          <input type="text" name="vehicle_identifier" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., TRK-001">
-        </div>
-        
-        <div class="flex items-end">
-          <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md">
-            <i class="fas fa-paper-plane mr-2"></i>Quick Report
-          </button>
-        </div>
-      </form>
-      
-      <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div class="flex items-center">
-          <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
-          <span class="text-sm text-yellow-800">For detailed reports with photos and location, use the "Full Report" button above.</span>
-        </div>
       </div>
     </div>
 
@@ -344,7 +279,7 @@
                   <div class="flex flex-col items-center">
                     <i class="fas fa-clipboard-list text-gray-400 text-4xl mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-900 mb-2">No incidents found</h3>
-                    <p class="text-gray-500">Start by reporting your first incident using the quick form above.</p>
+                    <p class="text-gray-500">Use <strong>Service & Support → Report Incident</strong> to create a new incident.</p>
                   </div>
                 </td>
               </tr>

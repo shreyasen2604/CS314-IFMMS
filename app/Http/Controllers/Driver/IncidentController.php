@@ -251,6 +251,15 @@ class IncidentController extends Controller
         $reportId = 'ER-' . date('Y') . '-' . str_pad($incident->id, 3, '0', STR_PAD_LEFT);
         $responseTime = $severity === 'P1' ? '5-15 min' : ($severity === 'P2' ? '15-30 min' : '30-60 min');
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok'            => true,
+                'id'            => $incident->id,
+                'report_id'     => $reportId,
+                'response_time' => $responseTime,
+            ]);
+        }
+
         return redirect()->route('driver.incidents.emergency')
             ->with('success', true)
             ->with('report_id', $reportId)

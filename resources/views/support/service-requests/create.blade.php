@@ -5,11 +5,17 @@
 @section('content')
 
 @php
-    $backUrl = auth()->user()->role === 'Driver'
-        ? route('driver.dashboard')      
-        : route('support.service-requests.index');
-@endphp
+    $role = strtolower(auth()->user()->role ?? '');
 
+    $dashMap = [
+        'driver'     => 'driver.dashboard',
+        'admin'      => 'dashboard',          
+        'technician' => 'dashboard',          
+    ];
+
+    $target  = $dashMap[$role] ?? 'dashboard';
+    $backUrl = \Illuminate\Support\Facades\Route::has($target) ? route($target) : url('/');
+@endphp
 
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
