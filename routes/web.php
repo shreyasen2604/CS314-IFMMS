@@ -74,7 +74,6 @@ Route::prefix('driver')->name('driver.')->middleware(['auth', RoleMiddleware::cl
 
     Route::get('/incidents', [DriverIncidentController::class, 'index'])->name('incidents.index');
     Route::get('/incidents/create', [DriverIncidentController::class, 'create'])->name('incidents.create');
-    Route::get('/incidents/emergency', [DriverIncidentController::class, 'emergency'])->name('incidents.emergency');
     Route::post('/incidents', [DriverIncidentController::class, 'store'])->name('incidents.store');
     Route::post('/incidents/emergency', [DriverIncidentController::class, 'emergencyStore'])->name('incidents.emergency.store');
 

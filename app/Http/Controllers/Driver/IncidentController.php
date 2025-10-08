@@ -22,7 +22,6 @@ class IncidentController extends Controller
 
     $by = $request->get('by','keyword'); // keyword|status|severity|vehicle|date
 
-    // ✅ sort whitelist
     $sortable = ['id','title','severity','status','created_at'];
     $sort = in_array($request->get('sort'), $sortable) ? $request->get('sort') : 'created_at';
     $dir  = $request->get('dir') === 'asc' ? 'asc' : 'desc';
@@ -65,17 +64,11 @@ class IncidentController extends Controller
     ]);
 }
 
-
     public function create()
     {
         $severities = ['P1','P2','P3','P4'];
         $categories = ['Engine','Electrical','Brakes','Tires','Cooling','Suspension','Transmission','Other'];
         return view('driver.incidents.create', compact('severities','categories'));
-    }
-
-    public function emergency()
-    {
-        return view('driver.incidents.emergency');
     }
 
     public function store(Request $request)
@@ -101,8 +94,7 @@ class IncidentController extends Controller
             $data['dtc_codes'] = $codes ?: null;
         }
 
-        $data['reported_by_user_id'] = auth()->id();   // driver is the reporter
-        // status defaults to "New" by migration; assignee left null
+        $data['reported_by_user_id'] = auth()->id();   
         Incident::create($data);
 
         return redirect()->route('driver.incidents.index')->with('ok', 'Incident submitted.');
@@ -111,7 +103,7 @@ class IncidentController extends Controller
     /* -------------------- NEW: view one incident -------------------- */
     public function show(Incident $incident)
     {
-        // Ensure drivers can only view their own incidents
+        //drivers can only view their own incidents
         abort_unless($incident->reported_by_user_id === auth()->id(), 403);
 
         $incident->load(['assignee','reporter']);
@@ -123,7 +115,7 @@ class IncidentController extends Controller
         return view('driver.incidents.show', compact('incident','updates'));
     }
 
-    /* -------------------- NEW: post a comment -------------------- */
+    // post a comment
     public function comment(Request $request, Incident $incident)
     {
         abort_unless($incident->reported_by_user_id === auth()->id(), 403);
@@ -167,17 +159,10 @@ class IncidentController extends Controller
         return back()->with('ok', 'Thanks — ticket closed.');
     }
 
-    /* -------------------- NEW: emergency report store -------------------- */
-    public function emergencyStore(Request $request)
-    {
-        $reportType = $request->input('report_type');
-        
-        if ($reportType === 'quick') {
-            return $this->storeQuickEmergencyReport($request);
-        } else {
-            return $this->storeDetailedEmergencyReport($request);
-        }
-    }
+public function emergencyStore(Request $request)
+{
+    return $this->storeQuickEmergencyReport($request);
+}
 
     private function storeQuickEmergencyReport(Request $request)
     {
@@ -220,19 +205,9 @@ class IncidentController extends Controller
         if ($data['needs_assistance'] ?? false) {
             $description .= "\n\n⚠️ IMMEDIATE ROADSIDE ASSISTANCE REQUESTED";
         }
-
-        // Determine severity based on emergency types
-        $criticalTypes = ['engine_trouble', 'overheating', 'electrical_problem'];
-        $highTypes = ['tire_issues', 'oil_low'];
         
-        $severity = 'P3'; // Default medium
-        if (array_intersect($criticalTypes, $emergencyTypes)) {
-            $severity = 'P1'; // Critical
-        } elseif (array_intersect($highTypes, $emergencyTypes)) {
-            $severity = 'P2'; // High
-        } elseif (in_array('fuel_low', $emergencyTypes)) {
-            $severity = 'P2'; // High for fuel issues
-        }
+        //Emergency reporting has highest priority.
+        $severity = 'P1';
 
         $incident = Incident::create([
             'title' => $title,
@@ -259,69 +234,6 @@ class IncidentController extends Controller
                 'response_time' => $responseTime,
             ]);
         }
-
-        return redirect()->route('driver.incidents.emergency')
-            ->with('success', true)
-            ->with('report_id', $reportId)
-            ->with('response_time', $responseTime);
-    }
-
-    private function storeDetailedEmergencyReport(Request $request)
-    {
-        $severities = ['P1','P2','P3','P4'];
-        $categories = ['Engine','Transmission','Brakes','Electrical','Fuel System','Cooling System','Tires','Suspension','Body/Exterior','Safety Equipment','Other'];
-
-        $data = $request->validate([
-            'vehicle_identifier' => ['required','string','max:50'],
-            'category' => ['required', Rule::in($categories)],
-            'incident_datetime' => ['required','date'],
-            'location_description' => ['required','string','max:255'],
-            'latitude' => ['nullable','numeric','between:-90,90'],
-            'longitude' => ['nullable','numeric','between:-180,180'],
-            'description' => ['required','string'],
-            'severity' => ['required', Rule::in($severities)],
-            'needs_assistance' => ['nullable','boolean'],
-            'photos' => ['nullable','array'],
-            'photos.*' => ['image','max:5120'], // 5MB max per image
-        ]);
-
-        // Generate title from category and severity
-        $title = $data['severity'] . ' ' . $data['category'] . ' Emergency';
-        
-        $description = $data['description'];
-        if ($data['needs_assistance'] ?? false) {
-            $description .= "\n\n⚠️ IMMEDIATE ROADSIDE ASSISTANCE REQUESTED";
-        }
-
-        $incident = Incident::create([
-            'title' => $title,
-            'description' => $description,
-            'category' => $data['category'],
-            'severity' => $data['severity'],
-            'vehicle_identifier' => $data['vehicle_identifier'],
-            'latitude' => $data['latitude'],
-            'longitude' => $data['longitude'],
-            'location_description' => $data['location_description'],
-            'reported_by_user_id' => auth()->id(),
-            'status' => 'New',
-            'created_at' => $data['incident_datetime'],
-        ]);
-
-        // Handle photo uploads (basic implementation)
-        if ($request->hasFile('photos')) {
-            foreach ($request->file('photos') as $photo) {
-                $path = $photo->store('incident-photos', 'public');
-                // You would typically save this to a photos table or add to incident data
-                // For now, we'll add it to the description
-                $incident->update([
-                    'description' => $incident->description . "\n\nPhoto uploaded: " . $path
-                ]);
-            }
-        }
-
-        // Generate report ID and response time
-        $reportId = 'ER-' . date('Y') . '-' . str_pad($incident->id, 3, '0', STR_PAD_LEFT);
-        $responseTime = $data['severity'] === 'P1' ? '5-15 min' : ($data['severity'] === 'P2' ? '15-30 min' : '30-60 min');
 
         return redirect()->route('driver.incidents.emergency')
             ->with('success', true)

@@ -142,12 +142,11 @@
                         </label>
                     </div>
                     </div>
-
                     <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">
-                        <span class="spinner-border spinner-border-sm me-2 d-none" id="qeSpinner"></span>
-                        Submit
+                    <button type="submit" id="quickSubmitBtn" class="btn btn-danger" disabled>
+                    <span class="spinner-border spinner-border-sm me-2 d-none" id="quickBtnSpinner" role="status" aria-hidden="true"></span>
+                    <span id="quickBtnText">Submit</span>
                     </button>
                     </div>
                 </form>
@@ -155,7 +154,6 @@
             </div>
             </div>
             <!-- /Quick Emergency Modal -->
-
 
             @if(session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -484,6 +482,67 @@ if (navigator.geolocation) {
   });
 })();
 </script>
+
+<script>
+(() => {
+  const modalEl          = document.getElementById('quickEmergencyModal');
+  const formEl           = document.getElementById('quickEmergencyForm');
+  const submitBtn        = document.getElementById('quickSubmitBtn');
+  const btnSpinner       = document.getElementById('quickBtnSpinner');
+  const btnText          = document.getElementById('quickBtnText');
+  const checkboxes       = modalEl.querySelectorAll('input[name="emergency_types[]"]');
+
+  let submitting = false;
+
+  function anyChecked() {
+    return Array.from(checkboxes).some(cb => cb.checked);
+  }
+
+  function updateSubmitState() {
+    submitBtn.disabled = submitting || !anyChecked();
+  }
+
+  checkboxes.forEach(cb => cb.addEventListener('change', updateSubmitState));
+  updateSubmitState();
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    submitting = true;
+    updateSubmitState();
+    btnSpinner.classList.remove('d-none');
+    btnText.textContent = 'Submitting…';
+
+    try {
+      const fd = new FormData(formEl);
+      const res = await fetch("{{ route('driver.incidents.emergency.store') }}", {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+        body: fd
+      });
+
+      if (!res.ok) throw new Error('Network error');
+
+      const data = await res.json();
+
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.hide();
+      formEl.reset();
+      updateSubmitState();
+
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit emergency report. Please try again.');
+    } finally {
+      submitting = false;
+      btnSpinner.classList.add('d-none');
+      btnText.textContent = 'Submit';
+      updateSubmitState();
+    }
+  });
+})();
+</script>
+
 
 
 @endsection
